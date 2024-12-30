@@ -19,6 +19,8 @@ exports.createPlayer = async (req, res) => {
 };
 
 exports.testLogin = async (req, res) => {
+  console.log("req.body", req.body);
+
   try {
     const { name, server } = req.body;
 
