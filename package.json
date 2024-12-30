@@ -5,7 +5,8 @@
   "main": "src/app.ts",
   "scripts": {
     "dev": "nodemon app.js",
-    "test": "jest"
+    "test": "jest",
+    "start": "node app.js"
   },
   "author": "",
   "license": "ISC",
