@@ -1,6 +1,8 @@
 const userModel = require("../model/user");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const axios = require("axios");
+const db = require("../db");
 
 exports.createUser = (req, res) => {
   const createdUser = userModel.create(req.body);
@@ -54,21 +56,21 @@ exports.kakaoLogin = async (req, res) => {
 
       console.log("useruser", user);
 
-      const newAccessToken = jwt.sign({ user_id: user.user_id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
-      const newRefreshToken = jwt.sign({ user_id: user.user_id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+      const newAccessToken = jwt.sign({ user_id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+      const newRefreshToken = jwt.sign({ user_id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
       res.json({
         CODE: "KL000",
         message: "Login successful",
         TOKEN: { accessToken: newAccessToken, refreshToken: newRefreshToken },
-        DATA: { info: { user_id: user.user_id, created_at: user.created_at } },
+        DATA: { info: { user_id: user.id, created_at: user.created_at } },
       });
 
       console.log("success!!!");
     } else {
-      const username = properties.nickname;
+      const username = properties?.nickname;
 
-      const [insertResult] = await db.query("INSERT INTO users (user_id, nickname,  created_at, type) VALUES (?, ?, ?,  ?)", [id, username, new Date(), 2]);
+      const [insertResult] = await db.query("INSERT INTO users (user_id, nickname, created_at, type) VALUES (?, ?, ?,  ?)", [id, username, new Date(), 2]);
 
       console.log("rrr", insertResult);
 
@@ -91,5 +93,23 @@ exports.kakaoLogin = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ CODE: "ERROR", message: "Internal server error", error: err.message });
+  }
+};
+
+exports.getInfo = async (req, res) => {
+  try {
+    const { user } = req;
+    const user_id = user.user_id;
+
+    if (!user_id) {
+      throw new Error("사용자 정보가 없습니다.");
+    }
+
+    // const [results] = await db.query("SELECT * FROM users WHERE id = ?", [user_id]);
+    const result = await userModel.getUser(user_id);
+
+    res.status(200).json({ success: true, user: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err });
   }
 };

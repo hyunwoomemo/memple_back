@@ -8,14 +8,13 @@ const server = http.createServer(app);
 const socketIo = require("socket.io");
 const setupSocket = require("./src/socket");
 const cors = require("cors");
+const auth = require("./src/middleware/auth");
 
 const io = socketIo(server);
 console.log("ioio", io);
 setupSocket(io, app);
 
 app.use(express.json());
-
-app.set("port", process.env.PORT || 8000);
 
 app.use(
   cors({
@@ -25,6 +24,10 @@ app.use(
     // credentials: true // 쿠키 포함 등의 옵션을 허용할 경우(origin을 *처리했을경우 쿠키설정 안먹음.)
   })
 );
+
+app.set("port", process.env.PORT || 8000);
+
+app.use(auth);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

@@ -89,7 +89,7 @@ module.exports = async (io, app) => {
     });
 
     // 메세지 보내기
-    socket.on("message", async ({ user_id, party_id, contents }) => {
+    socket.on("message", async ({ id, party_id, contents }) => {
       const key = `chat:room:${party_id}`;
       // const messages = await redis.getAsync(`messages:${party_id}`);
 

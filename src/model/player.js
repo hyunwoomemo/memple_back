@@ -43,3 +43,45 @@ exports.getUser = async ({ user_id }) => {
     throw new Error(err.message);
   }
 };
+
+exports.register = async ({ ocid, user_id, name }) => {
+  console.log("register", ocid, user_id, name);
+
+  try {
+    const [rows] = await db.query("insert into players (ocid, user_id, name, created_at) values (?,?,?,?)", [ocid, user_id, name, new Date()]);
+
+    return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.getPlayer = async ({ user_id, ocid }) => {
+  try {
+    const [rows] = await db.query("select * from players where user_id = ? and ocid = ?", [user_id, ocid]);
+
+    return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.getPlayers = async ({ user_id }) => {
+  try {
+    const [rows] = await db.query("SELECT p.*, CASE WHEN u.player_id = p.id THEN 1 ELSE 0 END AS status FROM memple.players p JOIN memple.users u ON u.id = p.user_id where u.id = ?;", [user_id]);
+
+    return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.select = async ({ id, user_id }) => {
+  try {
+    const [rows] = await db.query("update users set player_id = ? where id = ?", [id, user_id]);
+
+    return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
