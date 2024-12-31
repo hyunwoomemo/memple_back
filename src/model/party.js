@@ -75,7 +75,7 @@ exports.getPartyPlayer = async ({ app, party_id }) => {
   }
 };
 
-exports.updateStatus = async ({ user_id, party_id, status }) => {
+exports.updateStatus = async ({ player_id, party_id, status }) => {
   try {
     const [[{ count }]] = await db.query("SELECT COUNT(*) as count FROM parties WHERE id = ?", [party_id]);
 
@@ -88,12 +88,12 @@ exports.updateStatus = async ({ user_id, party_id, status }) => {
     switch (status) {
       case 1: // 가입
         query = "INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?";
-        params = [party_id, user_id, status, status];
+        params = [party_id, player_id, status, status];
         break;
       case 0: // 외출
       case -1: // 탈퇴
         query = "UPDATE party_player SET status = ?, updated_at = ? WHERE party_id = ? AND player_id = ?";
-        params = [status, new Date(), party_id, user_id];
+        params = [status, new Date(), party_id, player_id];
         break;
       default:
         throw new Error("Invalid status");

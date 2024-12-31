@@ -44,11 +44,19 @@ exports.getUser = async ({ user_id }) => {
   }
 };
 
-exports.register = async ({ ocid, user_id, name }) => {
-  console.log("register", ocid, user_id, name);
+exports.register = async ({ ocid, user_id, name, character_job, level, world }) => {
+  console.log("register123", ocid, user_id, name);
 
   try {
-    const [rows] = await db.query("insert into players (ocid, user_id, name, created_at) values (?,?,?,?)", [ocid, user_id, name, new Date()]);
+    const [rows] = await db.query("insert into players (ocid, user_id, name, character_job,created_at, level, world) values (?,?,?,?,?,?,?)", [
+      ocid,
+      user_id,
+      name,
+      character_job,
+      new Date(),
+      level,
+      world,
+    ]);
 
     return rows;
   } catch (err) {
@@ -81,6 +89,16 @@ exports.select = async ({ id, user_id }) => {
     const [rows] = await db.query("update users set player_id = ? where id = ?", [id, user_id]);
 
     return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.selectedPlayer = async ({ user_id }) => {
+  try {
+    const [rows] = await db.query("select p.* from players p join users u on p.user_id = u.id where u.player_id = p.id and u.id = ?", [user_id]);
+
+    return rows[0];
   } catch (err) {
     throw new Error(err.message);
   }

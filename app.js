@@ -33,11 +33,6 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.use((req, res, next) => {
-  console.log("🔥🔥🔥", req.path);
-  next();
-});
-
 app.use("/user", userRouter);
 app.use("/player", playerRouter);
 app.use("/party", partyRouter);
@@ -45,6 +40,8 @@ app.use("/party", partyRouter);
 const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Server Error !!";
+
+  console.log("eeeerrrrr", err);
 
   res.status(statusCode).json({
     success: false,

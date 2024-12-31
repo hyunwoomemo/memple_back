@@ -96,10 +96,39 @@ exports.kakaoLogin = async (req, res) => {
   }
 };
 
+exports.refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    res.status(400).json({ CODE: "RT000", message: "Refresh token is required" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    if (!decoded) {
+      res.status(401).json({ CODE: "RT001", message: "Invalid refresh token" });
+    }
+
+    const newAccessToken = jwt.sign({ user_id: decoded.user_id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+    const newRefreshToken = jwt.sign({ user_id: decoded.user_id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+    res.json({
+      CODE: "RT002",
+      message: "Token refreshed",
+      TOKEN: { accessToken: newAccessToken, refreshToken: newRefreshToken },
+    });
+  } catch (err) {
+    res.status(401).json({ CODE: "RT003", message: "Invalid refresh token" });
+  }
+};
+
 exports.getInfo = async (req, res) => {
   try {
     const { user } = req;
     const user_id = user.user_id;
+
+    console.log("asdasd", user_id);
 
     if (!user_id) {
       throw new Error("사용자 정보가 없습니다.");

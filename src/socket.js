@@ -9,9 +9,9 @@ module.exports = async (io, app) => {
   io.on("connection", (socket) => {
     // 파티 입장
 
-    socket.on("enterParty", async ({ user_id, party_id }) => {
+    socket.on("enterParty", async ({ player_id, party_id }) => {
       try {
-        console.log("enterParty user_id", user_id, party_id);
+        console.log("enterParty player_id", player_id, party_id);
 
         socket.join(party_id);
         redis.pubClient.lRange(`chat:room:${party_id}`, 0, -1, (err, result) => {
@@ -49,9 +49,9 @@ module.exports = async (io, app) => {
     });
 
     // 파티 유저 상태 변경
-    socket.on("updateStatusParty", async ({ user_id, party_id, status }) => {
+    socket.on("updateStatusParty", async ({ player_id, party_id, status }) => {
       try {
-        const result = await partyModel.updateStatus({ user_id, party_id, status });
+        const result = await partyModel.updateStatus({ player_id, party_id, status });
         console.log("result", result);
 
         if (result.affectedRows > 0) {
@@ -89,15 +89,15 @@ module.exports = async (io, app) => {
     });
 
     // 메세지 보내기
-    socket.on("message", async ({ id, party_id, contents }) => {
+    socket.on("message", async ({ player_id, party_id, contents, name }) => {
       const key = `chat:room:${party_id}`;
       // const messages = await redis.getAsync(`messages:${party_id}`);
 
       const now = new Date();
 
-      const user = await playerModel.getUser({ user_id });
+      // const user = await playerModel.getUser({ user_id });
 
-      await redis.pubClient.lPush(key, JSON.stringify({ user_id, contents, party_id, created_at: now, name: user[0].name }));
+      await redis.pubClient.lPush(key, JSON.stringify({ player_id, contents, party_id, created_at: now, name }));
       // 리스트 길이 제한 (최신 100개만 유지)
       await redis.pubClient.lTrim(key, 0, 99);
 
@@ -106,7 +106,7 @@ module.exports = async (io, app) => {
         JSON.stringify({
           room: party_id,
           event: "message",
-          data: { user_id, party_id, contents, created_at: now, name: user[0].name },
+          data: { player_id, party_id, contents, created_at: now, name },
         })
       );
     });
