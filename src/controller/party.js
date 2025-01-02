@@ -49,6 +49,8 @@ exports.getPartyPlayer = async (req, res) => {
   try {
     const result = await partyModel.getPartyPlayer({ app: req.app, party_id: id });
 
+    console.log("resultresultresult", result);
+
     res.status(200).json({ success: true, list: result });
   } catch (err) {
     res.status(500).json({ success: false, message: err });

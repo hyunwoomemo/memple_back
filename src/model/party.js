@@ -1,4 +1,5 @@
 const db = require("../db");
+const axios = require("axios");
 
 exports.create = async ({ title, server, region, player_id, description, exp_condition, level_condition, channel, password }) => {
   try {
@@ -63,13 +64,38 @@ exports.get = async () => {
 
 exports.getPartyPlayer = async ({ app, party_id }) => {
   try {
-    const [rows] = await db.query("select * from party_player where party_id = ?", [party_id]);
+    const [rows] = await db.query("select pp.*, p.name, p.character_job, p.ocid from party_player pp left join players p on p.id = pp.player_id where party_id = ?", [party_id]);
     // and status > 0
     const redis = app.get("redis");
     // console.log("redis", redis);
     redis.setExAsync(`party_player:${party_id}`, 3600, JSON.stringify(rows));
 
-    return rows;
+    const result = await Promise.all(
+      rows.map(async (v) => {
+        console.log("zxc", v);
+        const playerInfo = await redis.getAsync(`player:${v.ocid}`);
+
+        if (!playerInfo) {
+          const nexonResult = await axios.get(`https://open.api.nexon.com/maplestorym/v1/character/basic?ocid=${v.ocid}`, {
+            headers: {
+              ["x-nxopen-api-key"]: process.env.NEXON_API_KEY,
+            },
+          });
+
+          if (!nexonResult.data) {
+            throw new Error("사용자 정보가 없습니다.");
+          }
+
+          redis.setExAsync(`player:${v.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date() }));
+
+          return { ...v, ...nexonResult.data };
+        }
+
+        return { ...v, ...JSON.parse(playerInfo) };
+      })
+    );
+
+    return result;
   } catch (err) {
     throw new Error(err.message);
   }
