@@ -74,12 +74,42 @@ exports.getPlayer = async ({ user_id, ocid }) => {
   }
 };
 
-exports.getPlayers = async ({ user_id }) => {
+exports.getPlayers = async ({ user_id, app }) => {
   try {
     const [rows] = await db.query("SELECT p.*, CASE WHEN u.player_id = p.id THEN 1 ELSE 0 END AS status FROM memple.players p JOIN memple.users u ON u.id = p.user_id where u.id = ?;", [user_id]);
 
-    return rows;
+
+    const redis = app.get("redis");
+
+    redis.setExAsync(`my_players:${user_id}`, 3600, JSON.stringify(rows));
+
+    const result = await Promise.all(
+      rows.map(async (row) => {
+        const playerInfo = await redis.getAsync(`player:${row.ocid}`);
+
+        if (!playerInfo) {
+          const nexonResult = await axios.get(`https://open.api.nexon.com/maplestorym/v1/character/basic?ocid=${row.ocid}`, {
+            headers: {
+              ["x-nxopen-api-key"]: process.env.NEXON_API_KEY,
+            },
+          });
+
+          if (!nexonResult.data) {
+            throw new Error("사용자 정보가 없습니다.");
+          }
+
+          redis.setExAsync(`player:${row.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date() }));
+
+          return { ...row, ...nexonResult.data };
+        }
+
+        return { ...row, ...JSON.parse(playerInfo) };
+      })
+    );
+
+    return result;
   } catch (err) {
+    console.log("err", err);
     throw new Error(err.message);
   }
 };

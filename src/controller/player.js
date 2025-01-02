@@ -65,7 +65,8 @@ exports.register = async (req, res) => {
 exports.getPlayers = async (req, res) => {
   try {
     const { user_id } = req.user;
-    const result = await playerModel.getPlayers({ user_id });
+    const result = await playerModel.getPlayers({ app: req.app, user_id });
+
 
     res.status(200).json({ success: true, list: result });
   } catch (err) {
