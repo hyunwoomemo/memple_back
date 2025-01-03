@@ -44,7 +44,7 @@ exports.getUser = async ({ user_id }) => {
   }
 };
 
-exports.register = async ({ ocid, user_id, name, character_job, level, world }) => {
+exports.register = async ({ ocid, user_id, name, character_job, level, world_name }) => {
   console.log("register123", ocid, user_id, name);
 
   try {
@@ -55,7 +55,7 @@ exports.register = async ({ ocid, user_id, name, character_job, level, world }) 
       character_job,
       new Date(),
       level,
-      world,
+      world_name,
     ]);
 
     return rows;
@@ -77,7 +77,6 @@ exports.getPlayer = async ({ user_id, ocid }) => {
 exports.getPlayers = async ({ user_id, app }) => {
   try {
     const [rows] = await db.query("SELECT p.*, CASE WHEN u.player_id = p.id THEN 1 ELSE 0 END AS status FROM memple.players p JOIN memple.users u ON u.id = p.user_id where u.id = ?;", [user_id]);
-
 
     const redis = app.get("redis");
 
