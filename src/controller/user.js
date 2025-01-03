@@ -76,7 +76,7 @@ exports.kakaoLogin = async (req, res) => {
 
       const userId = insertResult.insertId;
 
-      const newAccessToken = jwt.sign({ user_id: userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+      const newAccessToken = jwt.sign({ user_id: userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1m" });
       const newRefreshToken = jwt.sign({ user_id: userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
       console.log("🔥🔥🔥🔥🔥🔥🔥🔥", userId, newAccessToken, newRefreshToken);
