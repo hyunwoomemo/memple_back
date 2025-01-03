@@ -56,3 +56,25 @@ exports.getPartyPlayer = async (req, res) => {
     res.status(500).json({ success: false, message: err });
   }
 };
+
+exports.addParty = async (req, res) => {
+  try {
+    console.log("rrr", req.body);
+
+    const { title, world_name, region, exp_condition, channel, password, min_level, max_level, creator_id } = req.body;
+    const { user_id } = req.user;
+
+    const result = await partyModel.addParty({ title, world_name, region, exp_condition, channel, password, min_level, max_level, creator_id });
+
+    if (result.affectedRows > 0) {
+      await partyModel.updateStatus({ player_id: creator_id, party_id: result.insertId, status: 1 });
+
+      res.status(200).json({ success: true, message: "파티 추가 성공" });
+    } else {
+      res.status(500).json({ success: false, message: "파티 추가 실패" });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: err });
+  }
+};

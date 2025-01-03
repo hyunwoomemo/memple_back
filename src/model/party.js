@@ -131,3 +131,23 @@ exports.updateStatus = async ({ player_id, party_id, status }) => {
     throw new Error(err.message);
   }
 };
+
+exports.addParty = async ({ title, world_name, region, exp_condition, channel, password, min_level, max_level, creator_id }) => {
+  try {
+    const [rows] = await db.query("insert into parties (title, world, region, exp_condition, channel, password, min_level, max_level, creator_id) values (?,?,?,?,?,?,?,?,?)", [
+      title,
+      world_name,
+      region,
+      exp_condition,
+      channel,
+      password,
+      min_level,
+      max_level,
+      creator_id,
+    ]);
+
+    return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
