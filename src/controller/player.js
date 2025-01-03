@@ -67,7 +67,6 @@ exports.getPlayers = async (req, res) => {
     const { user_id } = req.user;
     const result = await playerModel.getPlayers({ app: req.app, user_id });
 
-
     res.status(200).json({ success: true, list: result });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -151,7 +150,33 @@ exports.selectedPlayer = async (req, res) => {
 
     const result = await playerModel.selectedPlayer({ user_id });
 
-    res.status(200).json({ success: true, data: result });
+    if (Object.keys(result).length === 0) {
+      res.status(200).json({ success: true, message: "선택된 플레이어가 없습니다." });
+    } else {
+      const redis = req.app.get("redis");
+
+      const playerInfo = await redis.getAsync(`player:${result.ocid}`);
+
+      if (!playerInfo) {
+        const nexonResult = await axios.get(`https://open.api.nexon.com/maplestorym/v1/character/basic?ocid=${result.ocid}`, {
+          headers: {
+            ["x-nxopen-api-key"]: process.env.NEXON_API_KEY,
+          },
+        });
+
+        if (!nexonResult.data) {
+          throw new Error("사용자 정보가 없습니다.");
+        }
+
+        redis.setExAsync(`player:${result.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date() }));
+
+        res.status(200).json({ success: true, data: { ...result, ...nexonResult.data } });
+      } else {
+        res.status(200).json({ success: true, data: { ...result, ...JSON.parse(playerInfo) } });
+      }
+    }
+
+    // res.status(200).json({ success: true, data: result });
   } catch (err) {
     res.status(500).json({ success: false, message: err });
   }

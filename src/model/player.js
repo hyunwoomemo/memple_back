@@ -1,4 +1,5 @@
 const db = require("../db");
+const axios = require("axios");
 
 // 플레이어 추가
 exports.create = async ({ server, name }) => {
