@@ -6,5 +6,6 @@ router.post("/create", partyController.createParty);
 router.get("/get", partyController.getParty);
 router.get("/player/:id", partyController.getPartyPlayer);
 router.post("/add", partyController.addParty);
+router.get("/my/:player_id", partyController.getMyParty);
 
 module.exports = router;

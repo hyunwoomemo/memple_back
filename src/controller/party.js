@@ -78,3 +78,14 @@ exports.addParty = async (req, res) => {
     res.status(500).json({ success: false, message: err });
   }
 };
+
+exports.getMyParty = async (req, res) => {
+  try {
+    const { player_id } = req.params;
+    const result = await partyModel.getMyParty({ player_id });
+
+    res.status(200).json({ success: true, list: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err });
+  }
+};
