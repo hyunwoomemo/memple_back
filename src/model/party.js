@@ -67,7 +67,6 @@ exports.getPartyPlayer = async ({ app, party_id }) => {
     const [rows] = await db.query("select pp.*, p.name, p.character_job, p.ocid from party_player pp left join players p on p.id = pp.player_id where party_id = ?", [party_id]);
     // and status > 0
     const redis = app.get("redis");
-    // console.log("redis", redis);
     redis.setExAsync(`party_player:${party_id}`, 3600, JSON.stringify(rows));
 
     const result = await Promise.all(
@@ -101,20 +100,44 @@ exports.getPartyPlayer = async ({ app, party_id }) => {
   }
 };
 
-exports.updateStatus = async ({ player_id, party_id, status }) => {
+exports.updateStatus = async ({ player_id, party_id, status, redis }) => {
   try {
     const [[{ count }]] = await db.query("SELECT COUNT(*) as count FROM parties WHERE id = ?", [party_id]);
+
+    console.log("countcount", count);
 
     if (count === 0) {
       throw new Error("존재하지 않는 파티입니다.");
     }
 
+    const [existing] = await db.query("SELECT * FROM party_player WHERE player_id = ?", [player_id]);
+
     let query;
     let params;
     switch (status) {
       case 1: // 가입
-        query = "INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?";
-        params = [party_id, player_id, status, status];
+        if (existing.length > 0) {
+          const connection = await db.getConnection();
+          try {
+            await connection.beginTransaction();
+
+            const prev_party_id = existing[0].party_id;
+
+            await connection.query("UPDATE party_player SET party_id = ?, status = ? WHERE player_id = ?", [prev_party_id, -1, player_id]);
+            const [res2] = await connection.query("INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?", [party_id, player_id, status, status]);
+
+            await connection.commit();
+            return res2;
+          } catch (err) {
+            await connection.rollback();
+            throw new Error(err.message);
+          } finally {
+            connection.release();
+          }
+        } else {
+          query = "INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?";
+          params = [party_id, player_id, status, status];
+        }
         break;
       case 0: // 외출
       case -1: // 탈퇴
@@ -145,6 +168,16 @@ exports.addParty = async ({ title, world_name, region, exp_condition, channel, p
       max_level,
       creator_id,
     ]);
+
+    return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.getMyParty = async ({ player_id }) => {
+  try {
+    const [rows] = await db.query("SELECT p.*,count(pp.party_id) as player_count FROM parties p join party_player pp on p.id = pp.party_id where pp.player_id = ? group by p.id;", [player_id]);
 
     return rows;
   } catch (err) {
