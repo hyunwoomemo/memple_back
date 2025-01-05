@@ -3,12 +3,14 @@ const jwt = require("jsonwebtoken");
 const auth = async (req, res, next) => {
   try {
     const excludedPaths = ["/user/kakaoLogin", "/user/refreshToken"];
+    const excludedPrefixes = ["/assets"];
 
     const isExcludedPath = excludedPaths.includes(req.path);
+    const isExcludedPrefix = excludedPrefixes.some((prefix) => req.path.startsWith(prefix));
 
-    if (isExcludedPath) {
-      console.log("sdfsdf");
-      return next();
+    // 현재 요청 경로가 제외할 경로에 포함되는지 확인
+    if (isExcludedPath || isExcludedPrefix) {
+      return next(); // 포함되면 authJWT를 적용하지 않고 다음 미들웨어로 이동
     }
 
     const token = req.headers.authorization.split("Bearer ")[1];

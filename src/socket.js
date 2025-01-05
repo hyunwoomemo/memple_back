@@ -51,7 +51,7 @@ module.exports = async (io, app) => {
     // 파티 유저 상태 변경
     socket.on("updateStatusParty", async ({ player_id, party_id, status }) => {
       try {
-        const result = await partyModel.updateStatus({ player_id, party_id, status });
+        const result = await partyModel.updateStatus({ player_id, party_id, status, redis });
         console.log("result", result);
 
         if (result.affectedRows > 0) {

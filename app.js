@@ -9,12 +9,17 @@ const socketIo = require("socket.io");
 const setupSocket = require("./src/socket");
 const cors = require("cors");
 const auth = require("./src/middleware/auth");
+const path = require("path");
 
 const io = socketIo(server);
 console.log("ioio", io);
 setupSocket(io, app);
 
 app.use(express.json());
+const publicDirectoryPath = path.join(__dirname, "./src/public");
+console.log("Serving static files from:", publicDirectoryPath);
+
+app.use(express.static(publicDirectoryPath));
 
 app.use(
   cors({
