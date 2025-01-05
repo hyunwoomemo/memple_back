@@ -98,9 +98,11 @@ exports.getPlayers = async ({ user_id, app }) => {
             throw new Error("사용자 정보가 없습니다.");
           }
 
-          redis.setExAsync(`player:${row.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date() }));
+          const imageUrl = `assets/img/${nexonResult.data.character_job_name}.jpg`;
 
-          return { ...row, ...nexonResult.data };
+          redis.setExAsync(`player:${row.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date(), image_url: imageUrl }));
+
+          return { ...row, ...nexonResult.data, image_url: imageUrl };
         }
 
         return { ...row, ...JSON.parse(playerInfo) };

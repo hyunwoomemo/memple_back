@@ -117,28 +117,16 @@ exports.getInfo = async (req, res) => {
         throw new Error("사용자 정보가 없습니다.");
       }
 
-      redis.setExAsync(`player:${ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date() }));
+      const imageUrl = `assets/img/${nexonResult.data.character_job_name}.jpg`;
+
+      redis.setExAsync(`player:${ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date(), image_url: imageUrl }));
 
       // const result = await playerModel.getUser({ user_id });
-      res.status(200).json({ success: true, user: nexonResult.data });
+      res.status(200).json({ success: true, user: { ...nexonResult.data, image_url: imageUrl } });
     } else {
       console.log("cache data!!!");
       res.status(200).json({ success: true, user: JSON.parse(playerData) });
     }
-  } catch (err) {
-    res.status(500).json({ success: false, message: err });
-  }
-};
-
-exports.setInfo = async (req, res) => {
-  try {
-    console.log("rrr", req.body);
-
-    if (Object.keys(req.body).length === 0) return res.status(400).json({ success: false, message: "필수값 누락" });
-
-    const redis = req.app.get("redis");
-    redis.setExAsync(`player:${req.body.ocid}`, 3600, JSON.stringify(req.body));
-    res.status(200).json({ success: true, message: "저장되었습니다." });
   } catch (err) {
     res.status(500).json({ success: false, message: err });
   }
@@ -168,11 +156,8 @@ exports.selectedPlayer = async (req, res) => {
           throw new Error("사용자 정보가 없습니다.");
         }
 
-        console.log("nexonResult.data", nexonResult.data);
-        const imageUrl = `assets/img/키네시스.jpg`;
-        // const imageUrl = `public/assets/img/${nexonResult.data.character_job_name}.jpg`;
+        const imageUrl = `assets/img/${nexonResult.data.character_job_name}.jpg`;
 
-        // redis.setExAsync(`player:${result.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date(), image_url: '' }));
         redis.setExAsync(`player:${result.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date(), image_url: imageUrl }));
 
         res.status(200).json({ success: true, data: { ...result, ...nexonResult.data, image_url: imageUrl } });
