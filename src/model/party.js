@@ -85,9 +85,11 @@ exports.getPartyPlayer = async ({ app, party_id }) => {
             throw new Error("사용자 정보가 없습니다.");
           }
 
-          redis.setExAsync(`player:${v.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date() }));
+          const imageUrl = `assets/img/${nexonResult.data.character_job_name}.jpg`;
 
-          return { ...v, ...nexonResult.data };
+          redis.setExAsync(`player:${v.ocid}`, 3600, JSON.stringify({ ...nexonResult.data, created_at: new Date(), image_url: imageUrl }));
+
+          return { ...v, ...nexonResult.data, image_url: imageUrl };
         }
 
         return { ...v, ...JSON.parse(playerInfo) };
