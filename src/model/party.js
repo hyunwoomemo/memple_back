@@ -64,7 +64,7 @@ exports.get = async () => {
 
 exports.getPartyPlayer = async ({ app, party_id }) => {
   try {
-    const [rows] = await db.query("select pp.*, p.name, p.character_job, p.ocid from party_player pp left join players p on p.id = pp.player_id where party_id = ?", [party_id]);
+    const [rows] = await db.query("select pp.*, p.name, p.character_job, p.ocid from party_player pp left join players p on p.id = pp.player_id where party_id = ? and pp.status > -1", [party_id]);
     // and status > 0
     const redis = app.get("redis");
     redis.setExAsync(`party_player:${party_id}`, 3600, JSON.stringify(rows));
