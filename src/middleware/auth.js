@@ -24,7 +24,7 @@ const auth = async (req, res, next) => {
     next();
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
-      res.status(401).json({ success: false, message: "토큰이 만료되었습니다." });
+      res.status(401).json({ success: false, message: "토큰이 만료되었습니다.", err });
     } else {
       res.status(401).json({ success: false, message: "인증되지 않은 사용자입니다." });
     }

@@ -54,7 +54,7 @@ exports.edit = async ({ id, ...rest }) => {
 
 exports.get = async () => {
   try {
-    const [rows] = await db.query("select p.*, count(pp.party_id) as player_count from parties p left join party_player pp on p.id = pp.party_id group by p.id");
+    const [rows] = await db.query("SELECT p.*, COUNT(CASE WHEN pp.status > -1 THEN pp.party_id END) AS player_count FROM parties p LEFT JOIN party_player pp ON p.id = pp.party_id GROUP BY p.id;");
 
     return rows;
   } catch (err) {
@@ -71,7 +71,6 @@ exports.getPartyPlayer = async ({ app, party_id }) => {
 
     const result = await Promise.all(
       rows.map(async (v) => {
-        console.log("zxc", v);
         const playerInfo = await redis.getAsync(`player:${v.ocid}`);
 
         if (!playerInfo) {
@@ -179,7 +178,9 @@ exports.addParty = async ({ title, world_name, region, exp_condition, channel, p
 
 exports.getMyParty = async ({ player_id }) => {
   try {
-    const [rows] = await db.query("SELECT p.*,count(pp.party_id) as player_count FROM parties p join party_player pp on p.id = pp.party_id where pp.player_id = ? group by p.id;", [player_id]);
+    const [rows] = await db.query("SELECT p.*,count(pp.party_id) as player_count FROM parties p join party_player pp on p.id = pp.party_id where pp.player_id = ? and pp.status > -1 group by p.id;", [
+      player_id,
+    ]);
 
     return rows;
   } catch (err) {
