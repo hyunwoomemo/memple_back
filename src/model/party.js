@@ -178,9 +178,26 @@ exports.addParty = async ({ title, world_name, region, exp_condition, channel, p
 
 exports.getMyParty = async ({ player_id }) => {
   try {
-    const [rows] = await db.query("SELECT p.*,count(pp.party_id) as player_count FROM parties p join party_player pp on p.id = pp.party_id where pp.player_id = ? and pp.status > -1 group by p.id;", [
-      player_id,
-    ]);
+    const [rows] = await db.query(
+      `SELECT 
+    p.*, 
+    (SELECT COUNT(*) 
+     FROM party_player pp_sub 
+     WHERE pp_sub.party_id = p.id AND pp_sub.status > -1) AS player_count 
+FROM 
+    parties p 
+JOIN 
+    party_player pp 
+ON 
+    p.id = pp.party_id 
+WHERE 
+    pp.player_id = ?
+AND 
+    pp.status > -1 
+GROUP BY 
+    p.id;`,
+      [player_id]
+    );
 
     return rows;
   } catch (err) {

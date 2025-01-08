@@ -64,7 +64,7 @@ module.exports = async (io, app) => {
             JSON.stringify({
               room: party_id,
               event: "partyPlayer",
-              data: { message: "요청 성공", data: partyPlayer, success: true },
+              data: { message: "요청 성공", data: { player_id }, success: true },
             })
           );
 
@@ -73,7 +73,7 @@ module.exports = async (io, app) => {
               "all",
               JSON.stringify({
                 event: "leaveParty",
-                data: { message: "파티 탈퇴", data: { party_id }, success: true },
+                data: { message: "파티 탈퇴", data: { party_id, player_id }, success: true },
               })
             );
           }
