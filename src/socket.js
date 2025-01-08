@@ -9,6 +9,15 @@ module.exports = async (io, app) => {
   io.on("connection", (socket) => {
     // 파티 입장
 
+    if (!socket.handshake.query.server) {
+      console.log("선택되어있는 플레이어가 없습니다.");
+      throw new Error("선택되어있는 플레이어가 없습니다.");
+    }
+
+    const server = socket.handshake.query.server;
+
+    socket.join(server);
+
     socket.emit("message", socket.id);
 
     socket.on("enterParty", async ({ player_id, party_id }) => {
@@ -51,7 +60,7 @@ module.exports = async (io, app) => {
     });
 
     // 파티 유저 상태 변경
-    socket.on("updateStatusParty", async ({ player_id, party_id, status }) => {
+    socket.on("updateStatusParty", async ({ player_id, party_id, status, prevStatus }) => {
       try {
         const result = await partyModel.updateStatus({ player_id, party_id, status, redis });
         console.log("result", result);
@@ -60,7 +69,7 @@ module.exports = async (io, app) => {
           const partyPlayer = await partyModel.getPartyPlayer({ app, party_id });
 
           redis.pubClient.publish(
-            "message",
+            "party",
             JSON.stringify({
               room: party_id,
               event: "partyPlayer",
@@ -70,20 +79,22 @@ module.exports = async (io, app) => {
 
           if (status === -1) {
             redis.pubClient.publish(
-              "all",
+              "server",
               JSON.stringify({
+                room: server,
                 event: "leaveParty",
                 data: { message: "파티 탈퇴", data: { party_id, player_id }, success: true },
               })
             );
           }
 
-          if (status === 1) {
+          if (status === 1 && prevStatus !== 0) {
             redis.pubClient.publish(
               "all",
               JSON.stringify({
+                room: server,
                 event: "joinParty",
-                data: { message: "파티 가입", data: { party_id }, success: true },
+                data: { message: "파티 가입", data: { party_id, player_id }, success: true },
               })
             );
           }

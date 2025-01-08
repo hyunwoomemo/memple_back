@@ -33,7 +33,7 @@ const initRedis = async (io) => {
   io.adapter(createAdapter(pubClient.duplicate(), subClient.duplicate()));
 
   // 레디스 채널 구독
-  const channels = ["message", "party", "all"];
+  const channels = ["message", "party", "all", "server"];
   channels.forEach((channel) => {
     subClient.v4.subscribe(channel, (message) => handleRedisMessage(io, channel, message));
   });

@@ -138,7 +138,8 @@ exports.selectedPlayer = async (req, res) => {
 
     const result = await playerModel.selectedPlayer({ user_id });
 
-    if (Object.keys(result).length === 0) {
+
+    if (!result || Object.keys(result).length === 0) {
       res.status(200).json({ success: true, message: "선택된 플레이어가 없습니다." });
     } else {
       const redis = req.app.get("redis");

@@ -2,12 +2,16 @@ const partyModel = require("../model/party");
 
 exports.createParty = async (req, res) => {
   try {
-    const { title, server, region, player_id, description, exp_condition, level_condition, channel, password } = req.body;
+    const { title, world_name, region, creator_id, description, exp_condition, min_level, max_level, channel, password } = req.body;
 
-    const result = await partyModel.create({ title, server, region, player_id, description, exp_condition, level_condition, channel, password });
+    console.log("req.body", req.body);
+
+    const result = await partyModel.create({ title, world_name, region, creator_id, description, exp_condition, min_level, max_level, channel, password });
+
+    console.log("rr123", result);
 
     if (result.affectedRows > 0) {
-      partyModel.updateStatus({ user_id: player_id, party_id: result.insertId, status: 1 });
+      partyModel.updateStatus({ player_id: creator_id, party_id: result.insertId, status: 1 });
 
       res.status(201).json({ success: true, message: "파티방 생성 성공" });
     } else {
@@ -15,7 +19,7 @@ exports.createParty = async (req, res) => {
     }
   } catch (err) {
     console.log("error", err);
-    res.status(500).json({ success: false, message: err });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -83,9 +87,11 @@ exports.getMyParty = async (req, res) => {
   try {
     const { player_id } = req.params;
     const result = await partyModel.getMyParty({ player_id });
+    console.log("getMyParty rrrr", result);
 
     res.status(200).json({ success: true, list: result });
   } catch (err) {
+    console.log("getMyParty err", err);
     res.status(500).json({ success: false, message: err });
   }
 };

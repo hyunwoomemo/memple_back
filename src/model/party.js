@@ -1,11 +1,20 @@
 const db = require("../db");
 const axios = require("axios");
 
-exports.create = async ({ title, server, region, player_id, description, exp_condition, level_condition, channel, password }) => {
+exports.create = async ({ title, world_name, region, creator_id, description, exp_condition, level_condition, channel, password, min_level, max_level }) => {
   try {
-    if (!title || !server || !region || !player_id) {
+    if (!title || !world_name || !region || !creator_id) {
       throw new Error("입력값 오류");
       // return "입력값 오류";
+    }
+
+    // 이미 가입되어 있는 파티 있는지 확인
+
+    const [joinedParty] = await db.query("SELECT * FROM party_player WHERE player_id = ? and status > -1", [creator_id]);
+
+
+    if (joinedParty.length > 0) {
+      throw new Error("이미 가입되어 있는 파티가 있습니다.");
     }
 
     // 중복 체크
@@ -17,14 +26,15 @@ exports.create = async ({ title, server, region, player_id, description, exp_con
       throw new Error("같은 이름의 파티방이 존재합니다.");
     }
 
-    const [rows] = await db.query("insert into parties (title, server, region, creator_id, description, exp_condition, level_condition, channel, password) values (?,?,?,?, ?,?,?,?,?)", [
+    const [rows] = await db.query("insert into parties (title, world, region, creator_id, description, exp_condition, min_level,max_level, channel, password) values (?,?,?,?, ?,?,?,?,?,?)", [
       title,
-      server,
+      world_name,
       region,
-      player_id,
+      creator_id,
       description,
       exp_condition,
-      level_condition,
+      min_level,
+      max_level,
       channel,
       password,
     ]);
@@ -111,33 +121,37 @@ exports.updateStatus = async ({ player_id, party_id, status, redis }) => {
       throw new Error("존재하지 않는 파티입니다.");
     }
 
-    const [existing] = await db.query("SELECT * FROM party_player WHERE player_id = ?", [player_id]);
+    const [existing] = await db.query("SELECT * FROM party_player WHERE player_id = ? and status > -1", [player_id]);
+
+    console.log("existingexisting", existing);
 
     let query;
     let params;
     switch (status) {
       case 1: // 가입
-        if (existing.length > 0) {
-          const connection = await db.getConnection();
-          try {
-            await connection.beginTransaction();
+        if (existing.length > 0 && existing[0].status === 1) {
+          // const connection = await db.getConnection();
+          // try {
+          //   await connection.beginTransaction();
 
-            const prev_party_id = existing[0].party_id;
+          //   const prev_party_id = existing[0].party_id;
 
-            await connection.query("UPDATE party_player SET party_id = ?, status = ? WHERE player_id = ?", [prev_party_id, -1, player_id]);
-            const [res2] = await connection.query("INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?", [party_id, player_id, status, status]);
+          //   await connection.query("UPDATE party_player SET party_id = ?, status = ? WHERE player_id = ?", [prev_party_id, -1, player_id]);
+          //   const [res2] = await connection.query("INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?", [party_id, player_id, status, status]);
 
-            await connection.commit();
-            return res2;
-          } catch (err) {
-            await connection.rollback();
-            throw new Error(err.message);
-          } finally {
-            connection.release();
-          }
+          //   await connection.commit();
+          //   return res2;
+          // } catch (err) {
+          //   await connection.rollback();
+          //   throw new Error(err.message);
+          // } finally {
+          //   connection.release();
+          // }
+
+          throw new Error("이미 가입되어있는 파티가 있습니다.");
         } else {
-          query = "INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?";
-          params = [party_id, player_id, status, status];
+          query = "INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?, party_id = ?";
+          params = [party_id, player_id, status, status, party_id];
         }
         break;
       case 0: // 외출
@@ -152,6 +166,7 @@ exports.updateStatus = async ({ player_id, party_id, status, redis }) => {
     const [rows] = await db.query(query, params);
     return rows;
   } catch (err) {
+    console.log("err", err);
     throw new Error(err.message);
   }
 };
