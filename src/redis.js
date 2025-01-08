@@ -33,7 +33,7 @@ const initRedis = async (io) => {
   io.adapter(createAdapter(pubClient.duplicate(), subClient.duplicate()));
 
   // 레디스 채널 구독
-  const channels = ["message", "party"];
+  const channels = ["message", "party", "all"];
   channels.forEach((channel) => {
     subClient.v4.subscribe(channel, (message) => handleRedisMessage(io, channel, message));
   });
@@ -45,7 +45,12 @@ const handleRedisMessage = (io, channel, message) => {
   console.log("123zxczxczxc", channel, message);
   try {
     const parsedMessage = JSON.parse(message);
-    io.to(parsedMessage.room).emit(parsedMessage.event, parsedMessage.data);
+    if (parsedMessage.room) {
+      io.to(parsedMessage.room).emit(parsedMessage.event, parsedMessage.data);
+    } else {
+      // 모든 사용자에게 메시지 전송
+      io.emit(parsedMessage.event, parsedMessage.data);
+    }
   } catch (error) {
     console.error(`${channel} error`, error);
   }

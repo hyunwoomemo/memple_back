@@ -9,6 +9,8 @@ module.exports = async (io, app) => {
   io.on("connection", (socket) => {
     // 파티 입장
 
+    socket.emit("message", socket.id);
+
     socket.on("enterParty", async ({ player_id, party_id }) => {
       try {
         console.log("enterParty player_id", player_id, party_id);
@@ -65,6 +67,26 @@ module.exports = async (io, app) => {
               data: { message: "요청 성공", data: partyPlayer, success: true },
             })
           );
+
+          if (status === -1) {
+            redis.pubClient.publish(
+              "all",
+              JSON.stringify({
+                event: "leaveParty",
+                data: { message: "파티 탈퇴", data: { party_id }, success: true },
+              })
+            );
+          }
+
+          if (status === 1) {
+            redis.pubClient.publish(
+              "all",
+              JSON.stringify({
+                event: "joinParty",
+                data: { message: "파티 가입", data: { party_id }, success: true },
+              })
+            );
+          }
         } else {
           redis.pubClient.publish(
             "message",
