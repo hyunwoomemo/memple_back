@@ -11,7 +11,8 @@ module.exports = async (io, app) => {
 
     if (!socket.handshake.query.server) {
       console.log("선택되어있는 플레이어가 없습니다.");
-      throw new Error("선택되어있는 플레이어가 없습니다.");
+      // throw new Error("선택되어있는 플레이어가 없습니다.");
+      return;
     }
 
     const server = socket.handshake.query.server;
