@@ -37,7 +37,7 @@ exports.editParty = async (req, res) => {
   }
 };
 
-exports.getParty = async (req, res) => {
+exports.getParties = async (req, res) => {
   try {
     const result = await partyModel.get();
 

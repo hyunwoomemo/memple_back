@@ -12,7 +12,6 @@ exports.create = async ({ title, world_name, region, creator_id, description, ex
 
     const [joinedParty] = await db.query("SELECT * FROM party_player WHERE player_id = ? and status > -1", [creator_id]);
 
-
     if (joinedParty.length > 0) {
       throw new Error("이미 가입되어 있는 파티가 있습니다.");
     }
@@ -67,6 +66,19 @@ exports.get = async () => {
     const [rows] = await db.query("SELECT p.*, COUNT(CASE WHEN pp.status > -1 THEN pp.party_id END) AS player_count FROM parties p LEFT JOIN party_player pp ON p.id = pp.party_id GROUP BY p.id;");
 
     return rows;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.getById = async ({ id }) => {
+  try {
+    const [[result]] = await db.query(
+      "SELECT p.*, COUNT(CASE WHEN pp.status > -1 THEN pp.party_id END) AS player_count FROM parties p LEFT JOIN party_player pp ON p.id = pp.party_id where p.id = ? GROUP BY p.id;",
+      [id]
+    );
+
+    return result;
   } catch (err) {
     throw new Error(err.message);
   }

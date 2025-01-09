@@ -67,14 +67,16 @@ module.exports = async (io, app) => {
         console.log("result", result);
 
         if (result.affectedRows > 0) {
-          const partyPlayer = await partyModel.getPartyPlayer({ app, party_id });
+          const updateParty = await partyModel.getById({ id: party_id });
+
+          // const partyPlayer = await partyModel.getPartyPlayer({ app, party_id });
 
           redis.pubClient.publish(
             "party",
             JSON.stringify({
               room: party_id,
               event: "partyPlayer",
-              data: { message: "요청 성공", data: { player_id }, success: true },
+              data: { message: "요청 성공", data: { party_id, player_id, updateParty }, success: true },
             })
           );
 
@@ -84,7 +86,7 @@ module.exports = async (io, app) => {
               JSON.stringify({
                 room: server,
                 event: "leaveParty",
-                data: { message: "파티 탈퇴", data: { party_id, player_id }, success: true },
+                data: { message: "파티 탈퇴", data: { party_id, player_id, updateParty }, success: true },
               })
             );
           }
@@ -95,7 +97,7 @@ module.exports = async (io, app) => {
               JSON.stringify({
                 room: server,
                 event: "joinParty",
-                data: { message: "파티 가입", data: { party_id, player_id }, success: true },
+                data: { message: "파티 가입", data: { party_id, player_id, updateParty }, success: true },
               })
             );
           }
