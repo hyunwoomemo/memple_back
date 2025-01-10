@@ -42,22 +42,41 @@ exports.register = async (req, res) => {
   console.log("register", req.body, req.user);
 
   try {
-    const data = await playerModel.getPlayer({ ocid: req.body.ocid, user_id: req.user.user_id });
+    const redis = req.app.get("redis");
+
+    const { ocid } = req.body;
+
+    const data = await playerModel.getPlayer({ ocid, user_id: req.user.user_id });
 
     if (data.length > 0) {
-      return res.status(400).json({ success: false, message: "이미 등록된 플레이어입니다." });
-    }
+      if (data[0].status > -1) {
+        return res.status(400).json({ success: false, message: "이미 등록된 플레이어입니다." });
+      } else {
+        const [result] = await db.query("update players set status = ? where user_id = ? and ocid = ?", [1, req.user.user_id, ocid]);
 
-    const result = await playerModel.register({ ...req.body, user_id: req.user.user_id });
+        console.log("resultresultresult", result);
 
-    console.log("resultresult", result);
-
-    if (result.affectedRows > 0) {
-      res.status(200).json({ success: true, message: "등록되었습니다.", insertId: result.insertId });
+        if (result.affectedRows > 0) {
+          redis.setExAsync(`my_players:${req.user.user_id}`, 3600, JSON.stringify([]));
+          res.status(200).json({ success: true, message: "등록되었습니다.", insertId: result.insertId });
+        } else {
+          res.status(500).json({ success: false, message: "등록에 실패했습니다." });
+        }
+      }
     } else {
-      res.status(500).json({ success: false, message: "등록에 실패했습니다." });
+      const result = await playerModel.register({ ...req.body, user_id: req.user.user_id, app: req.app });
+
+      console.log("resultresult", result);
+
+      if (result.affectedRows > 0) {
+        redis.setExAsync(`my_players:${req.user.user_id}`, 3600, JSON.stringify([]));
+        res.status(200).json({ success: true, message: "등록되었습니다.", insertId: result.insertId });
+      } else {
+        res.status(500).json({ success: false, message: "등록에 실패했습니다." });
+      }
     }
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

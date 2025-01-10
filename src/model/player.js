@@ -49,7 +49,7 @@ exports.register = async ({ ocid, user_id, name, character_job, level, world_nam
   console.log("register123", ocid, user_id, name);
 
   try {
-    const [rows] = await db.query("insert into players (ocid, user_id, name, character_job,created_at, level, world) values (?,?,?,?,?,?,?)", [
+    const [rows] = await db.query("insert into players (ocid, user_id, name, character_job,created_at, level, world, status) values (?,?,?,?,?,?,?, ?)", [
       ocid,
       user_id,
       name,
@@ -57,6 +57,7 @@ exports.register = async ({ ocid, user_id, name, character_job, level, world_nam
       new Date(),
       level,
       world_name,
+      1,
     ]);
 
     return rows;
@@ -81,7 +82,6 @@ exports.getPlayers = async ({ user_id, app }) => {
     let data;
 
     const cashedData = await redis.getAsync(`my_players:${user_id}`);
-
 
     if (JSON.parse(cashedData)?.length > 0) {
       data = JSON.parse(cashedData);
@@ -151,7 +151,6 @@ exports.selectedPlayer = async ({ user_id }) => {
 exports.deletePlayer = async ({ player_id, user_id }) => {
   try {
     const [[{ player_id: id }]] = await db.query("select player_id from users where id = ?", [user_id]);
-
 
     if (id === player_id) {
       throw new Error("선택되어 있는 직업은 삭제가 불가능합니다.");
