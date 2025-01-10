@@ -100,6 +100,10 @@ exports.select = async (req, res) => {
     const result = await playerModel.select({ user_id, id, status });
 
     if (result.affectedRows > 0) {
+      const redis = req.app.get("redis");
+
+      redis.setExAsync(`my_players:${user_id}`, 3600, JSON.stringify([]));
+
       res.status(200).json({ success: true, message: "요청에 성공했습니다." });
     } else {
       res.status(500).json({ success: false, message: "요청에 실패했습니다." });

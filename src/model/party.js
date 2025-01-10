@@ -68,7 +68,6 @@ exports.get = async ({ app, world }) => {
     const cashedData = await redis.getAsync(`parties:${world}`);
     let data;
 
-
     if (JSON.parse(cashedData)?.length > 0) {
       data = JSON.parse(cashedData);
     } else {
@@ -141,8 +140,6 @@ exports.updateStatus = async ({ player_id, party_id, status, redis }) => {
   try {
     const [[{ count }]] = await db.query("SELECT COUNT(*) as count FROM parties WHERE id = ?", [party_id]);
 
-    console.log("countcount", count);
-
     if (count === 0) {
       throw new Error("존재하지 않는 파티입니다.");
     }
@@ -155,25 +152,7 @@ exports.updateStatus = async ({ player_id, party_id, status, redis }) => {
     let params;
     switch (status) {
       case 1: // 가입
-        if (existing.length > 0 && existing[0].status === 1) {
-          // const connection = await db.getConnection();
-          // try {
-          //   await connection.beginTransaction();
-
-          //   const prev_party_id = existing[0].party_id;
-
-          //   await connection.query("UPDATE party_player SET party_id = ?, status = ? WHERE player_id = ?", [prev_party_id, -1, player_id]);
-          //   const [res2] = await connection.query("INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?", [party_id, player_id, status, status]);
-
-          //   await connection.commit();
-          //   return res2;
-          // } catch (err) {
-          //   await connection.rollback();
-          //   throw new Error(err.message);
-          // } finally {
-          //   connection.release();
-          // }
-
+        if (existing.length > 0 && existing[0].status > -1) {
           throw new Error("이미 가입되어있는 파티가 있습니다.");
         } else {
           query = "INSERT INTO party_player (party_id, player_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?, party_id = ?";
