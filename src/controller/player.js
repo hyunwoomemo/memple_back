@@ -138,7 +138,6 @@ exports.selectedPlayer = async (req, res) => {
 
     const result = await playerModel.selectedPlayer({ user_id });
 
-
     if (!result || Object.keys(result).length === 0) {
       res.status(200).json({ success: true, message: "선택된 플레이어가 없습니다." });
     } else {
@@ -169,6 +168,23 @@ exports.selectedPlayer = async (req, res) => {
 
     // res.status(200).json({ success: true, data: result });
   } catch (err) {
-    res.status(500).json({ success: false, message: err });
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.delete = async (req, res) => {
+  try {
+    const { player_id } = req.body;
+    const redis = req.app.get("redis");
+
+    const result = await playerModel.deletePlayer({ player_id, user_id: req.user.user_id });
+
+    if (result.affectedRows > 0) {
+      redis.setExAsync(`my_players:${req.user.user_id}`, 3600, JSON.stringify([]));
+
+      res.status(200).json({ success: true, message: "삭제 되었습니다." });
+    }
+  } catch (err) {
+    res.status(500).json({ sucess: false, message: err.message });
   }
 };

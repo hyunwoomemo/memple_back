@@ -77,14 +77,26 @@ exports.getPlayer = async ({ user_id, ocid }) => {
 
 exports.getPlayers = async ({ user_id, app }) => {
   try {
-    const [rows] = await db.query("SELECT p.*, CASE WHEN u.player_id = p.id THEN 1 ELSE 0 END AS status FROM memple.players p JOIN memple.users u ON u.id = p.user_id where u.id = ?;", [user_id]);
-
     const redis = app.get("redis");
+    let data;
 
-    redis.setExAsync(`my_players:${user_id}`, 3600, JSON.stringify(rows));
+    const cashedData = await redis.getAsync(`my_players:${user_id}`);
+
+
+    if (JSON.parse(cashedData)?.length > 0) {
+      data = JSON.parse(cashedData);
+    } else {
+      const [rows] = await db.query(
+        "SELECT p.*, CASE WHEN u.player_id = p.id THEN 1 ELSE 0 END AS status FROM memple.players p JOIN memple.users u ON u.id = p.user_id where u.id = ? and status > -1;",
+        [user_id]
+      );
+
+      redis.setExAsync(`my_players:${user_id}`, 3600, JSON.stringify(rows));
+      data = rows;
+    }
 
     const result = await Promise.all(
-      rows.map(async (row) => {
+      data.map(async (row) => {
         const playerInfo = await redis.getAsync(`player:${row.ocid}`);
 
         if (!playerInfo) {
@@ -131,6 +143,23 @@ exports.selectedPlayer = async ({ user_id }) => {
     const [rows] = await db.query("select p.* from players p join users u on p.user_id = u.id where u.player_id = p.id and u.id = ?", [user_id]);
 
     return rows[0];
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+exports.deletePlayer = async ({ player_id, user_id }) => {
+  try {
+    const [[{ player_id: id }]] = await db.query("select player_id from users where id = ?", [user_id]);
+
+
+    if (id === player_id) {
+      throw new Error("선택되어 있는 직업은 삭제가 불가능합니다.");
+    }
+
+    const [rows] = await db.query("update players set status = -1 where id = ?", [player_id]);
+
+    return rows;
   } catch (err) {
     throw new Error(err.message);
   }

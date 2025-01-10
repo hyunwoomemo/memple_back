@@ -68,7 +68,8 @@ exports.get = async ({ app, world }) => {
     const cashedData = await redis.getAsync(`parties:${world}`);
     let data;
 
-    if (cashedData) {
+
+    if (JSON.parse(cashedData)?.length > 0) {
       data = JSON.parse(cashedData);
     } else {
       [data] = await db.query(
