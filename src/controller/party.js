@@ -13,6 +13,20 @@ exports.createParty = async (req, res) => {
     if (result.affectedRows > 0) {
       partyModel.updateStatus({ player_id: creator_id, party_id: result.insertId, status: 1 });
 
+      const redis = req.app.get("redis");
+
+      const parties = await partyModel.get();
+
+      redis.setExAsync(`parties:${world_name}`, 3600, JSON.stringify(parties));
+
+      redis.pubClient.publish(
+        "server",
+        JSON.stringify({
+          room: world_name,
+          event: "updatePartyList",
+          data: parties,
+        })
+      );
       res.status(201).json({ success: true, message: "파티방 생성 성공" });
     } else {
       res.status(500).json({ success: false, message: "파티방 생성 실패" });
@@ -39,11 +53,15 @@ exports.editParty = async (req, res) => {
 
 exports.getParties = async (req, res) => {
   try {
-    const result = await partyModel.get();
+    const { world } = req.params;
+    const app = req.app;
+
+    const result = await partyModel.get({ world, app });
 
     res.status(200).json({ success: true, list: result });
   } catch (err) {
-    res.status(500).json({ success: false, message: err });
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

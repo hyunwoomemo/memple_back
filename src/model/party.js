@@ -61,11 +61,24 @@ exports.edit = async ({ id, ...rest }) => {
   }
 };
 
-exports.get = async () => {
+exports.get = async ({ app, world }) => {
   try {
-    const [rows] = await db.query("SELECT p.*, COUNT(CASE WHEN pp.status > -1 THEN pp.party_id END) AS player_count FROM parties p LEFT JOIN party_player pp ON p.id = pp.party_id GROUP BY p.id;");
+    const redis = app.get("redis");
 
-    return rows;
+    const cashedData = await redis.getAsync(`parties:${world}`);
+    let data;
+
+    if (cashedData) {
+      data = JSON.parse(cashedData);
+    } else {
+      [data] = await db.query(
+        "SELECT p.*, COUNT(CASE WHEN pp.status > -1 THEN pp.party_id END) AS player_count FROM parties p LEFT JOIN party_player pp ON p.id = pp.party_id where world = ? GROUP BY p.id;",
+        [world]
+      );
+      redis.setExAsync(`parties:${world}`, 3600, JSON.stringify(data));
+    }
+
+    return data;
   } catch (err) {
     throw new Error(err.message);
   }
